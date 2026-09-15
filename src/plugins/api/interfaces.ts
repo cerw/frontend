@@ -946,6 +946,8 @@ export interface MediaItemChapter {
   name: string;
   start: number;
   end: number | null;
+  image: string | null;
+  url: string | null;
 }
 
 // a collection groups related items, most commonly an audiobook series
