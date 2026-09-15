@@ -40,12 +40,12 @@
               >{{ formatDuration(chapter.end - chapter.start) }}
             </span>
             <a
-              v-if="chapter.url"
-              :href="chapter.url"
+              v-if="chapterLink(chapter)"
+              :href="chapterLink(chapter)"
               target="_blank"
               rel="noopener"
               class="chapter-link"
-              :title="chapter.url"
+              :title="chapterLink(chapter)"
               @click.stop
             >
               <ExternalLink :size="16" />
@@ -63,6 +63,7 @@ import Container from "@/components/Container.vue";
 import Toolbar from "@/components/Toolbar.vue";
 import {
   formatDuration,
+  getExternalLinkUrl,
   getMediaImageUrl,
   getMediaItemImage,
   getMediaItemImageUrl,
@@ -107,6 +108,9 @@ const chapterClicked = function (chapter: MediaItemChapter) {
 };
 
 const failedThumbs = ref<string[]>([]);
+const chapterLink = function (chapter: MediaItemChapter): string | undefined {
+  return getExternalLinkUrl(chapter.url);
+};
 
 const episodeCoverUrl = computed(() => {
   const img = getMediaItemImage(props.itemDetails, ImageType.THUMB);

@@ -324,12 +324,12 @@
                       {{ formatDuration(chapter.end - chapter.start) }}
                     </span>
                     <a
-                      v-if="chapter.url"
-                      :href="chapter.url"
+                      v-if="queueChapterLink(chapter)"
+                      :href="queueChapterLink(chapter)"
                       target="_blank"
                       rel="noopener"
                       class="queue-chapter__link"
-                      :title="chapter.url"
+                      :title="queueChapterLink(chapter)"
                       @click.stop
                     >
                       <ExternalLink :size="14" />
@@ -526,6 +526,7 @@ import { getPlayerMenuItems } from "@/helpers/player_menu_items";
 import {
   ImageColorPalette,
   formatDuration,
+  getExternalLinkUrl,
   getMediaImageUrl,
   getMediaItemImage,
   getMediaItemImageUrl,
@@ -641,6 +642,12 @@ const activeChapter = computed(() => currentChapter.value?.chapter);
 const isActiveChapter = (item: QueueItem, chapter: MediaItemChapter) =>
   item.queue_item_id === chapterQueueItem.value?.queue_item_id &&
   chapter.position === activeChapter.value?.position;
+
+const queueChapterLink = function (
+  chapter: MediaItemChapter,
+): string | undefined {
+  return getExternalLinkUrl(chapter.url);
+};
 
 const failedQueueThumbs = ref<string[]>([]);
 
