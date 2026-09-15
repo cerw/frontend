@@ -311,10 +311,29 @@
                     "
                     @click.stop="chapterClicked(row.item.media_item, chapter)"
                   >
+                    <img
+                      v-if="queueChapterThumb(row.item.media_item, chapter)"
+                      :src="queueChapterThumb(row.item.media_item, chapter)"
+                      loading="lazy"
+                      :alt="chapter.name"
+                      class="queue-chapter__thumb"
+                      @error="onQueueThumbError(row.item.media_item, chapter)"
+                    />
                     <span class="queue-chapter__name">{{ chapter.name }}</span>
                     <span v-if="chapter.end" class="queue-chapter__time">
                       {{ formatDuration(chapter.end - chapter.start) }}
                     </span>
+                    <a
+                      v-if="queueChapterLink(chapter)"
+                      :href="queueChapterLink(chapter)"
+                      target="_blank"
+                      rel="noopener"
+                      class="queue-chapter__link"
+                      :title="queueChapterLink(chapter)"
+                      @click.stop
+                    >
+                      <ExternalLink :size="14" />
+                    </a>
                   </button>
                 </div>
               </div>
@@ -507,7 +526,10 @@ import { getPlayerMenuItems } from "@/helpers/player_menu_items";
 import {
   ImageColorPalette,
   formatDuration,
+  getExternalLinkUrl,
   getMediaImageUrl,
+  getMediaItemImage,
+  getMediaItemImageUrl,
   getPlayerName,
 } from "@/helpers/utils";
 import LyricsOffsetMenuControl from "@/layouts/default/PlayerOSD/LyricsOffsetMenuControl.vue";
@@ -523,6 +545,11 @@ import PlayerFullscreenHeaderControls from "@/layouts/default/PlayerOSD/PlayerFu
 import PlayerVolume from "@/layouts/default/PlayerOSD/PlayerVolume.vue";
 import QueueListItem from "@/layouts/default/PlayerOSD/QueueListItem.vue";
 import QueueModeBanner from "@/layouts/default/PlayerOSD/QueueModeBanner.vue";
+import {
+  ChevronDownIcon,
+  EllipsisVerticalIcon,
+  ExternalLink,
+} from "@lucide/vue";
 import { useFullscreenQueue } from "@/layouts/default/PlayerOSD/useFullscreenQueue";
 import { useNowPlayingSource } from "@/composables/nowPlayingSource";
 import { resolveActiveElapsedTime } from "@/helpers/activeElapsedTime";
@@ -531,6 +558,7 @@ import api from "@/plugins/api";
 import {
   MediaItemChapter,
   MediaType,
+  PlayableMediaItemType,
   PlaybackState,
   PlayerType,
   QueueItem,
@@ -542,7 +570,6 @@ import { $t } from "@/plugins/i18n";
 import router from "@/plugins/router";
 import { store } from "@/plugins/store";
 import vuetify from "@/plugins/vuetify";
-import { ChevronDownIcon, EllipsisVerticalIcon } from "@lucide/vue";
 import Color from "color";
 import {
   computed,
@@ -615,6 +642,47 @@ const activeChapter = computed(() => currentChapter.value?.chapter);
 const isActiveChapter = (item: QueueItem, chapter: MediaItemChapter) =>
   item.queue_item_id === chapterQueueItem.value?.queue_item_id &&
   chapter.position === activeChapter.value?.position;
+
+const queueChapterLink = function (
+  chapter: MediaItemChapter,
+): string | undefined {
+  return getExternalLinkUrl(chapter.url);
+};
+
+const failedQueueThumbs = ref<string[]>([]);
+
+const queueChapterCover = function (
+  mediaItem: PlayableMediaItemType | null,
+): string {
+  if (!mediaItem) return "";
+  const cover = getMediaItemImage(mediaItem);
+  return cover ? getMediaItemImageUrl(cover, 256) : "";
+};
+
+const queueChapterThumb = function (
+  mediaItem: PlayableMediaItemType | null,
+  chapter: MediaItemChapter,
+): string {
+  if (chapter.image && !failedQueueThumbs.value.includes(chapter.image)) {
+    return getMediaImageUrl(chapter.image);
+  }
+  const coverUrl = queueChapterCover(mediaItem);
+  if (coverUrl && !failedQueueThumbs.value.includes(coverUrl)) return coverUrl;
+  return "";
+};
+
+const onQueueThumbError = function (
+  mediaItem: PlayableMediaItemType | null,
+  chapter: MediaItemChapter,
+): void {
+  const current =
+    chapter.image && !failedQueueThumbs.value.includes(chapter.image)
+      ? chapter.image
+      : queueChapterCover(mediaItem);
+  if (current && !failedQueueThumbs.value.includes(current)) {
+    failedQueueThumbs.value.push(current);
+  }
+};
 
 const updateChapterTimer = (needed: boolean) => {
   if (needed && chapterTimer === null) {
@@ -1512,6 +1580,24 @@ onBeforeUnmount(() => {
   flex: 0 0 auto;
   font-size: 0.72rem;
   opacity: 0.6;
+}
+
+.queue-chapter__thumb {
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  border-radius: 4px;
+  object-fit: cover;
+}
+
+.queue-chapter__link {
+  display: inline-flex;
+  flex: 0 0 auto;
+  color: inherit;
+  opacity: 0.7;
+}
+.queue-chapter__link:hover {
+  opacity: 1;
 }
 
 .queue-empty {
